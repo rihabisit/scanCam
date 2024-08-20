@@ -4,6 +4,7 @@
 // Le fichier PDF est ensuite enregistré dans le répertoire de documents de l'application, avec un nom spécifié par l'utilisateur ou généré automatiquement.
 // attention : supprimer la partie de google mlkit et liée avec model
 import 'dart:io';
+import 'dart:convert';
 import 'dart:math';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:flutter/widgets.dart';
@@ -13,41 +14,84 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'home.dart';
 import 'Translator.dart';
+import 'package:http/http.dart' as http;
+
+
+
 class ExtractTextPage extends StatefulWidget {
   late File file;
-
-  ExtractTextPage({required this.file});
+  final String extractedText;
+  final String languageCode;
+  ExtractTextPage({required this.file, required this.extractedText, required this.languageCode});
 
 
   @override
   State<ExtractTextPage> createState() => _ExtractTextPageState();
 }
 class _ExtractTextPageState extends State<ExtractTextPage> {
-  late TextRecognizer textRecognizer;
+  //late TextRecognizer textRecognizer;
   TextEditingController textEditingController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
   bool _isLoading = true;
+  String _errorMessage = "";
+
 
   @override
   void initState() {
     super.initState();
-    textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    //_detectLanguage(widget.file);
-    doTextRecognition();
+   // textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    _extractText();
+   // doTextRecognition();
   }
+
+  /// resultat api
+
+  Future<void> _extractText() async {
+    final uri = Uri.parse('http://127.0.0.1:5000/ocr');
+    final request = http.MultipartRequest('POST', uri)
+      ..files.add(await http.MultipartFile.fromPath('image', widget.file.path))
+      ..fields['language'] = widget.languageCode;
+
+    try {
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final responseData = await response.stream.bytesToString();
+        final data = jsonDecode(responseData);
+        final text = data[widget.languageCode]['text'] ?? '';
+        setState(() {
+          textEditingController.text = text;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to extract text from the image';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An error occurred: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+
+
+
   @override
   void dispose() {
-    textRecognizer.close();
+   // textRecognizer.close();
     super.dispose();
   }
   String results = "";
 
   doTextRecognition() async {
     InputImage inputImage = InputImage.fromFile(this.widget.file);
-    final RecognizedText recognizedText = await textRecognizer.processImage(
-        inputImage);
+   // final RecognizedText recognizedText = await textRecognizer.processImage(
+    //    inputImage);
 
-    results = recognizedText.text;
+    //results = recognizedText.text;
     print(results);
     textEditingController.text = results;
     setState(() {
@@ -56,19 +100,19 @@ class _ExtractTextPageState extends State<ExtractTextPage> {
     });
 
 
-    for (TextBlock block in recognizedText.blocks) {
-      final Rect rect = block.boundingBox;
-      final List<Point<int>> cornerPoints = block.cornerPoints;
-      final String text = block.text;
-      final List<String> languages = block.recognizedLanguages;
+   // for (TextBlock block in recognizedText.blocks) {
+     // final Rect rect = block.boundingBox;
+     // final List<Point<int>> cornerPoints = block.cornerPoints;
+     // final String text = block.text;
+    //  final List<String> languages = block.recognizedLanguages;
 
-      for (TextLine line in block.lines) {
+    //  for (TextLine line in block.lines) {
         // Same getters as TextBlock
-        for (TextElement element in line.elements) {
+     //   for (TextElement element in line.elements) {
           // Same getters as TextBlock
-        }
-      }
-    }
+      //  }
+     // }
+  //  }
   }
 
   Future<void> saveAsPDF() async {
