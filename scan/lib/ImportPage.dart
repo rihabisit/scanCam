@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_langdetect/flutter_langdetect.dart' as langdetect;
 import 'ExtractTextPage.dart';
-import 'Translator.dart'; // Ensure this import is correct
+import 'Translator.dart';
 
 class ImportPage extends StatefulWidget {
   final File file;
@@ -64,7 +64,7 @@ class _ImportPageState extends State<ImportPage> {
     }
   }
 
-Future<void> _uploadFile(File file, bool isPdf) async {
+  Future<void> _uploadFile(File file, bool isPdf) async {
     final uri = Uri.parse('http://192.168.1.65:5000/${isPdf ? 'ocr_pdf' : 'ocr'}');
     var request = http.MultipartRequest('POST', uri);
 
@@ -93,8 +93,9 @@ Future<void> _uploadFile(File file, bool isPdf) async {
           results = responseJson['eng']['text'] ?? '';
           results += '\n' + (responseJson['ara']['text'] ?? '');
           results += '\n' + (responseJson['fra']['text'] ?? '');
-          _detectLanguage(results);
         });
+
+        _detectLanguage(results);
       } else {
         print('Failed to upload file. Status code: ${response.statusCode}'); // Ligne de débogage
       }
@@ -103,10 +104,7 @@ Future<void> _uploadFile(File file, bool isPdf) async {
     }
   }
 
-
-
   void _detectLanguage(String text) async {
-    WidgetsFlutterBinding.ensureInitialized();
     await langdetect.initLangDetect(); // Initialize language detection
 
     final language = langdetect.detect(text);
@@ -148,7 +146,7 @@ Future<void> _uploadFile(File file, bool isPdf) async {
                     MaterialPageRoute(
                       builder: (context) => ExtractTextPage(
                         file: _croppedFile,
-                        extractedText: results, // Pass the extracted text here
+                        extractedText: results,
                         languageCode: _detectedLanguage.isNotEmpty ? _detectedLanguage : 'eng',
                       ),
                     ),
@@ -164,14 +162,10 @@ Future<void> _uploadFile(File file, bool isPdf) async {
                 ),
                 padding: EdgeInsets.symmetric(vertical: 14, horizontal: 28),
               ),
-              child: Text('Extracted Text', style: TextStyle(color: Colors.white)),
+              child: Text('Extract Text', style: TextStyle(color: Colors.white)),
             ),
 
             SizedBox(height: 20),
-            // Text(
-            //   'Langue détectée : $_detectedLanguage',
-            //   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            // ),
           ],
         ),
       ),
