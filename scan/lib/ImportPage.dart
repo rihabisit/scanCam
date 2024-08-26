@@ -64,7 +64,7 @@ class _ImportPageState extends State<ImportPage> {
     }
   }
 
-  Future<void> _uploadFile(File file, bool isPdf) async {
+Future<void> _uploadFile(File file, bool isPdf) async {
     final uri = Uri.parse('http://192.168.1.65:5000/${isPdf ? 'ocr_pdf' : 'ocr'}');
     var request = http.MultipartRequest('POST', uri);
 
@@ -73,30 +73,37 @@ class _ImportPageState extends State<ImportPage> {
       file.path,
     ));
 
-    request.fields['language[]'] = 'eng'; // You can add more languages here
+    request.fields['language[]'] = 'eng'; // Anglais
+    request.fields['language[]'] = 'ara'; // Arabe
+    request.fields['language[]'] = 'fra'; // Français
 
-    print('Uploading file: ${file.path} to $uri'); // Debugging line
+    print('Uploading file: ${file.path} to $uri'); // Ligne de débogage
 
     try {
       var response = await request.send();
-      print('Response status code: ${response.statusCode}'); // Debugging line
+      print('Response status code: ${response.statusCode}'); // Ligne de débogage
 
       if (response.statusCode == 200) {
         final responseData = await response.stream.bytesToString();
-        print('Response data: $responseData'); // Debugging line
+        print('Response data: $responseData'); // Ligne de débogage
 
         final Map<String, dynamic> responseJson = json.decode(responseData);
         setState(() {
+          // Récupérer les résultats pour chaque langue
           results = responseJson['eng']['text'] ?? '';
+          results += '\n' + (responseJson['ara']['text'] ?? '');
+          results += '\n' + (responseJson['fra']['text'] ?? '');
           _detectLanguage(results);
         });
       } else {
-        print('Failed to upload file. Status code: ${response.statusCode}'); // Debugging line
+        print('Failed to upload file. Status code: ${response.statusCode}'); // Ligne de débogage
       }
     } catch (e) {
-      print('Error uploading file: $e'); // Debugging line
+      print('Error uploading file: $e'); // Ligne de débogage
     }
   }
+
+
 
   void _detectLanguage(String text) async {
     WidgetsFlutterBinding.ensureInitialized();
